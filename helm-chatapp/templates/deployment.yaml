@@ -1,0 +1,97 @@
+---
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  name: echoheaders
+spec:
+  replicas: {{ .Values.replicacount }}
+  template:
+    metadata:
+      labels:
+        app: echoheaders
+    spec:
+      containers:
+      - name: echoheaders
+        image: gcr.io/google_containers/echoserver:1.0
+        ports:
+        - containerPort: 8080
+
+---
+apiVersion: apps/v1 
+kind: Deployment
+metadata:
+  name: postgres-deployment
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Values.Deployments.db_name }}
+  replicas: 1 
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.Deployments.db_name }}
+    spec:
+      containers:
+      - name: {{ .Values.Deployments.db_name }}
+        image: {{ .Values.Deployments.db_image_url }}
+        env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.Deployments.db_key_name }}
+                  key: user
+
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.Deployments.db_key_name }}
+                  key: password
+
+            - name: POSTGRES_DB
+              value: dockerdb
+        ports:
+        - containerPort: {{ .Values.Deployments.db_port }} 
+        volumeMounts:
+        - mountPath: /var/lib/postgresql/data
+          name: {{ .Values.Deployments.db_volume }}
+      volumes:
+      - name: {{ .Values.Deployments.db_volume }}
+        persistentVolumeClaim:
+          claimName: {{ .Values.Deployments.db_claim }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.Deployments.app_name }}
+spec:
+  replicas: {{ .Values.replicacount }}
+  selector:
+    matchLabels:
+      app: {{ .Values.Deployments.app_name }}
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  minReadySeconds: 5 
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.Deployments.app_name }}
+    spec:
+      nodeSelector:
+        "beta.kubernetes.io/os": linux
+      containers:
+      - name: {{ .Values.Deployments.app_name }}
+        image: {{ .Values.Deployments.app_image_url }}
+        ports:
+        - containerPort: {{ .Values.Deployments.app_port }}
+        resources:
+          requests:
+            cpu: 250m
+          limits:
+            cpu: 500m
+          #value: "Welcome to Azure Kubernetes Service (AKS)"
+        env:
+        - name: TITLE
+          value: "Welcome AKS Ingress chatapp"
+

@@ -1,0 +1,24 @@
+replicacount: 1
+
+Deployments:
+  app_name: chatapp-one
+  db_name: database1
+  replicas: 1
+  db_key_name: db-keys
+  db_claim: database1-claim 
+  db_volume: database1-volume 
+  app_image_url: revanthacr.azurecr.io/kubeapp_chatapp:v1
+  db_image_url: revanthacr.azurecr.io/postgres:v1
+  #app_image_url: revanthparepalli/kubeapp_chatapp:v1
+  #db_image_url: revanthparepalli/postgres:v1
+  app_port: 8000
+  db_port: 5432
+
+Service:
+  app_name: chatapp-one
+  app_port: 8000
+  db_name: database1
+  db_svc_type: ClusterIP
+  app_svc_type: ClusterIP
+  app_svc_port: 80
+  db_svc_port: 5432
